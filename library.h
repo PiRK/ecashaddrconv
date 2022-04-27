@@ -1,0 +1,6 @@
+#ifndef ECASHADDRCONV_LIBRARY_H
+#define ECASHADDRCONV_LIBRARY_H
+
+void hello();
+
+#endif //ECASHADDRCONV_LIBRARY_H
