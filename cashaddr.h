@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <map>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -77,12 +78,13 @@ const std::string TESTNET_PREFIX = "ectest";
 const std::string REGTEST_PREFIX = "ecreg";
 const std::string ETOKEN_PREFIX = "etoken";
 
-
-enum CashAddrType : uint8_t { PUBKEY_TYPE = 0, SCRIPT_TYPE = 1 };
+enum AddrType : uint8_t { PUBKEY = 0, SCRIPT = 1 };
+enum ChainType : uint8_t { MAIN = 0, TEST = 1, REG = 2 };
 
 struct CashAddrContent {
-    CashAddrType type;
+    AddrType type;
     std::vector<uint8_t> hash;
+    ChainType chainType {ChainType::MAIN};
 };
 
 std::string EncodeCashAddr(const std::string &prefix,
@@ -91,5 +93,6 @@ std::string EncodeCashAddr(const std::string &prefix,
 CashAddrContent DecodeCashAddrContent(const std::string &addr,
                                       const std::string &expectedPrefix);
 
+std::string EncodeBase58(std::vector<uint8_t> input);
 
 #endif // CASHADDR_H

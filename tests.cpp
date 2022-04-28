@@ -83,11 +83,19 @@ void cashaddr_testvectors_noprefix() {
     }
 }
 
+void base58_encode() {
+    assert(EncodeBase58({100}) == "2j");
+    assert(EncodeBase58({0x27, 0x0f}) == "3yQ");
+    // "Hello World!" in ASCII
+    assert(EncodeBase58({0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21}) == "2NEpo7TZRRrLZSi2U");
+}
+
 int main(int argc, char** argv) {
     cashaddr_testvectors_valid();
     cashaddr_testvectors_invalid();
     cashaddr_rawencode();
     cashaddr_testvectors_noprefix();
+    base58_encode();
 
     std::cout << "Test suite completed successfully." << std::endl;
     return 0;

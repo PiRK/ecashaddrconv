@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <cassert>
 #include <stdexcept>
 #include "cashaddr.h"
 
@@ -365,7 +366,7 @@ CashAddrContent DecodeCashAddrContent(const std::string &addr,
         return {};
     }
 
-    auto type = CashAddrType((version >> 3) & 0x1f);
+    auto type = AddrType((version >> 3) & 0x1f);
     uint32_t hash_size = 20 + 4 * (version & 0x03);
     if (version & 0x04) {
         hash_size *= 2;
@@ -379,4 +380,51 @@ CashAddrContent DecodeCashAddrContent(const std::string &addr,
     // Pop the version.
     data.erase(data.begin());
     return {type, std::move(data)};
+}
+
+/** All alphanumeric characters except for "0", "I", "O", and "l" */
+static const char *pszBase58 =
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+std::string EncodeBase58(std::vector<uint8_t> input) {
+    // Skip & count leading zeroes.
+    int zeroes = 0;
+    int length = 0;
+    while (input.size() > 0 && input[0] == 0) {
+        input.erase(input.begin());
+        zeroes++;
+    }
+    // Allocate enough space in big-endian base58 representation.
+    // log(256) / log(58), rounded up.
+    int size = input.size() * 138 / 100 + 1;
+    std::vector<uint8_t> b58(size);
+    // Process the bytes.
+    while (input.size() > 0) {
+        int carry = input[0];
+        int i = 0;
+        // Apply "b58 = b58 * 256 + ch".
+        for (std::vector<uint8_t>::reverse_iterator it = b58.rbegin();
+             (carry != 0 || i < length) && (it != b58.rend()); it++, i++) {
+            carry += 256 * (*it);
+            *it = carry % 58;
+            carry /= 58;
+        }
+
+        assert(carry == 0);
+        length = i;
+        input.erase(input.begin());
+    }
+    // Skip leading zeroes in base58 result.
+    std::vector<uint8_t>::iterator it = b58.begin() + (size - length);
+    while (it != b58.end() && *it == 0) {
+        it++;
+    }
+    // Translate the result into a string.
+    std::string str;
+    str.reserve(zeroes + (b58.end() - it));
+    str.assign(zeroes, '1');
+    while (it != b58.end()) {
+        str += pszBase58[*(it++)];
+    }
+    return str;
 }
