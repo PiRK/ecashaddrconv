@@ -3,9 +3,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "cashaddr.h"
+
 #include <cassert>
 #include <stdexcept>
-#include "cashaddr.h"
+
+#include "hash.h"
 
 /**
  * The cashaddr character set for encoding.
@@ -427,4 +430,27 @@ std::string EncodeBase58(std::vector<uint8_t> input) {
         str += pszBase58[*(it++)];
     }
     return str;
+}
+
+std::string EncodeBase58Check(std::vector<uint8_t> input) {
+    // add 4-byte hash check to the end
+    std::vector<uint8_t> vch(input.begin(), input.end());
+    std::vector<uint8_t> hash = Hash(vch);
+    vch.insert(vch.end(), (uint8_t *)&hash, (uint8_t *)&hash + 4);
+    return EncodeBase58(vch);
+}
+
+std::map<ChainType, std::map<AddrType, std::vector<uint8_t>>> base58Prefixes = {
+    {ChainType::MAIN, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 0)}}},
+    {ChainType::MAIN, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 5)}}},
+    {ChainType::TEST, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 111)}}},
+    {ChainType::TEST, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 196)}}},
+    {ChainType::REG, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 111)}}},
+    {ChainType::REG, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 196)}}},
+};
+
+std::string EncodeLegacyAddr(CashAddrContent content) {
+    std::vector<uint8_t> data = base58Prefixes[content.chainType][content.type];
+    data.insert(data.end(), content.hash.begin(), content.hash.end());
+    return EncodeBase58Check(data);
 }

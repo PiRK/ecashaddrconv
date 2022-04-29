@@ -94,5 +94,8 @@ CashAddrContent DecodeCashAddrContent(const std::string &addr,
                                       const std::string &expectedPrefix);
 
 std::string EncodeBase58(std::vector<uint8_t> input);
+std::string EncodeBase58Check(std::vector<uint8_t> input);
+
+std::string EncodeLegacyAddr(CashAddrContent content);
 
 #endif // CASHADDR_H

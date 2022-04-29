@@ -1,5 +1,8 @@
 #include "cashaddr.h"
+#include "hash.h"
+
 #include <cassert>
+#include <cstring>
 #include <iostream>
 
 // convert string to back to lower case
@@ -10,6 +13,55 @@ static std::string to_lowercase(const std::string &str) {
     }
 
     return ret;
+}
+
+static int char2int(char input) {
+    if(input >= '0' && input <= '9') {
+        return input - '0';
+    }
+    if(input >= 'A' && input <= 'F') {
+        return input - 'A' + 10;
+    }
+    if(input >= 'a' && input <= 'f') {
+        return input - 'a' + 10;
+    }
+    throw std::invalid_argument("Invalid input string");
+}
+
+// This function assumes hexstr to be a  sanitized string with
+// an even number of [0-9a-f] characters
+static std::vector<uint8_t> hex2bin(const std::string &hexstr) {
+    std::vector<uint8_t> ret;
+    size_t count = 0;
+    uint8_t first_hex_digit;
+    for (char const &c: hexstr) {
+        if (count % 2) {
+            ret.push_back(first_hex_digit + char2int(c));
+        } else {
+            first_hex_digit = char2int(c) << 4;
+        }
+        count++;
+    }
+    return ret;
+}
+
+static void assert_vectors_equal(const std::vector<uint8_t> vec1,
+                            const std::vector<uint8_t> vec2) {
+    assert(vec1.size() == vec2.size());
+    for(size_t i = 0; i < vec1.size(); i ++ ) {
+        assert(vec1[i] == vec2[i]);
+    }
+}
+
+void hex2bin_tests() {
+    assert(hex2bin("00") == std::vector<uint8_t>{0});
+    assert(hex2bin("01") == std::vector<uint8_t>{1});
+    assert(hex2bin("0a") == std::vector<uint8_t>{10});
+    assert(hex2bin("0f") == std::vector<uint8_t>{15});
+    assert(hex2bin("0F") == std::vector<uint8_t>{15});
+    assert(hex2bin("FF") == std::vector<uint8_t>{255});
+    assert_vectors_equal(hex2bin("010d"), std::vector<uint8_t>{1, 13});
+    assert_vectors_equal(hex2bin("00011a0fFF"), std::vector<uint8_t>{0, 1, 26, 15, 255});
 }
 
 void cashaddr_testvectors_valid() {
@@ -86,16 +138,34 @@ void cashaddr_testvectors_noprefix() {
 void base58_encode() {
     assert(EncodeBase58({100}) == "2j");
     assert(EncodeBase58({0x27, 0x0f}) == "3yQ");
-    // "Hello World!" in ASCII
-    assert(EncodeBase58({0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21}) == "2NEpo7TZRRrLZSi2U");
+    std::vector<uint8_t> hello_world = {
+        0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21};
+    assert(EncodeBase58(hello_world) == "2NEpo7TZRRrLZSi2U");
+}
+
+void encode_legacy_address() {
+    // Example from https://reference.cash/protocol/blockchain/encoding/base58check
+    CashAddrContent content{
+        AddrType::PUBKEY,
+        hex2bin("211b74ca4686f81efda5641767fc84ef16dafe0b"),
+        ChainType::MAIN
+    };
+    assert(EncodeLegacyAddr(content) == "1424C2F4bC9JidNjjTUZCbUxv6Sa1Mt62x");
+}
+
+void hash_test() {
+    assert(sha256::SelfTest());
 }
 
 int main(int argc, char** argv) {
+    hex2bin_tests();
     cashaddr_testvectors_valid();
     cashaddr_testvectors_invalid();
     cashaddr_rawencode();
     cashaddr_testvectors_noprefix();
     base58_encode();
+    hash_test();
+    encode_legacy_address();
 
     std::cout << "Test suite completed successfully." << std::endl;
     return 0;
