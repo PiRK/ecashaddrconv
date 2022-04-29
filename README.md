@@ -6,6 +6,6 @@ Standalone C++ implementation of cashaddr extracted from Bitcoin ABC
 To run unit tests, compile `tests.cpp` and run the resulting executable.
 
 ``` 
-g++ -o tests tests.cpp cashaddr.cpp
+g++ -o tests tests.cpp cashaddr.cpp -lssl -lcrypto
 ./tests
 ```

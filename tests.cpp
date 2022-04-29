@@ -1,9 +1,9 @@
 #include "cashaddr.h"
-#include "hash.h"
 
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <openssl/sha.h>
 
 // convert string to back to lower case
 static std::string to_lowercase(const std::string &str) {
@@ -143,15 +143,86 @@ void base58_encode() {
     assert(EncodeBase58(hello_world) == "2NEpo7TZRRrLZSi2U");
 }
 
-//void encode_legacy_address() {
-//    CashAddrContent content{
-//        AddrType::PUBKEY,
-//        hex2bin("eb88f1c65b39a823479ac9c7db2f4a865960a165"),
-//        ChainType::MAIN
-//    };
-//    std::cout << EncodeLegacyAddr(content) << std::endl;
-//    assert(EncodeLegacyAddr(content) == "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i");
-//}
+void hash_testvectors() {
+    // This is just to make sure I'm using the OpenSSL API correctly.
+    // https://www.di-mgt.com.au/sha_testvectors.html
+    std::vector<uint8_t> abc_vector{0x61, 0x62, 0x63};
+    uint8_t hash1[32];
+    SHA256((unsigned char*)abc_vector.data(), abc_vector.size(), (unsigned char*)&hash1);
+    // expected ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+    assert(hash1[0] == 0xba);
+    assert(hash1[31] == 0xad);
+
+    uint8_t abc_array[3]{0x61, 0x62, 0x63};
+    uint8_t hash2[32];
+    SHA256((unsigned char*)&abc_array, 3, (unsigned char*)&hash2);
+    assert(hash2[0] == 0xba);
+    assert(hash2[31] == 0xad);
+
+    // Double sha256
+    uint8_t hash3[32];
+    SHA256((unsigned char*)&hash2, 32, (unsigned char*)&hash3);
+    // expected 4f8b42c22dd3729b519ba6f68d2da7cc5b2d606d05daed5ad5128cc03e6c6358
+    assert(hash3[0] == 0x4f);
+    assert(hash3[31] == 0x58);
+}
+
+void encode_legacy_address() {
+    std::vector<std::pair<std::string, CashAddrContent>> vectors = {
+        {
+            "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i",
+            {
+                AddrType::PUBKEY,
+                hex2bin("65a16059864a2fdbc7c99a4723a8395bc6f188eb"),
+                ChainType::MAIN
+            }
+        },
+        {
+            "3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou",
+            {
+                AddrType::SCRIPT,
+                hex2bin("74f209f6ea907e2ea48f74fae05782ae8a665257"),
+                ChainType::MAIN
+            }
+        },
+        {
+            "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
+            {
+                AddrType::PUBKEY,
+                hex2bin("53c0307d6851aa0ce7825ba883c6bd9ad242b486"),
+                ChainType::TEST
+            }
+        },
+        {
+            "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
+            {
+                AddrType::SCRIPT,
+                hex2bin("6349a418fc4578d10a372b54b45c280cc8c4382f"),
+                ChainType::TEST
+            }
+        },
+        {
+            "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
+            {
+                AddrType::PUBKEY,
+                hex2bin("53c0307d6851aa0ce7825ba883c6bd9ad242b486"),
+                ChainType::REG
+            }
+        },
+        {
+            "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
+            {
+                AddrType::SCRIPT,
+                hex2bin("6349a418fc4578d10a372b54b45c280cc8c4382f"),
+                ChainType::REG
+            }
+        }
+    };
+
+    for(auto [addr, content]: vectors) {
+        assert(EncodeLegacyAddr(content) == addr);
+    }
+}
 
 void convert_cashaddr_to_legacy() {
     std::string addr1 = "qpelrdn7a0hcucjlf9ascz3lkxv7r3rffgzn6x5377";
@@ -167,14 +238,8 @@ void convert_cashaddr_to_legacy() {
         assert(recode2 == prefixed_addr1);
 
         std::string legacy = EncodeLegacyAddr(content);
-        std::cout << legacy << std::endl;
-        // FIXME: expected 1Ba4GZo5pnYJvNNXTi3FEKcYJ8AHkiu9ni
-        //        actual: good payload but wrong (random) checksum
+        assert(legacy == "1Ba4GZo5pnYJvNNXTi3FEKcYJ8AHkiu9ni");
     }
-}
-
-void hash_test() {
-    assert(sha256::SelfTest());
 }
 
 int main(int argc, char** argv) {
@@ -184,8 +249,8 @@ int main(int argc, char** argv) {
     cashaddr_rawencode();
     cashaddr_testvectors_noprefix();
     base58_encode();
-    hash_test();
-//    encode_legacy_address();
+    hash_testvectors();
+    encode_legacy_address();
     convert_cashaddr_to_legacy();
 
     std::cout << "Test suite completed successfully." << std::endl;

@@ -6,9 +6,9 @@
 #include "cashaddr.h"
 
 #include <cassert>
+#include <iostream>
+#include <openssl/sha.h>
 #include <stdexcept>
-
-#include "hash.h"
 
 /**
  * The cashaddr character set for encoding.
@@ -435,12 +435,18 @@ std::string EncodeBase58(std::vector<uint8_t> input) {
 std::string EncodeBase58Check(std::vector<uint8_t> input) {
     // add 4-byte hash check to the end
     std::vector<uint8_t> vch(input.begin(), input.end());
-    std::vector<uint8_t> hash = Hash(vch);
-    vch.insert(vch.end(), (uint8_t *)&hash, (uint8_t *)&hash + 4);
+    assert(vch.size() == input.size());
+
+    uint8_t hash1[SHA256_DIGEST_LENGTH];
+    SHA256((unsigned char*)vch.data(), vch.size(), (unsigned char*)&hash1);
+    uint8_t hash2[SHA256_DIGEST_LENGTH];
+    SHA256((unsigned char*)&hash1, SHA256_DIGEST_LENGTH, (unsigned char*)&hash2);
+
+    vch.insert(vch.end(), (uint8_t *)&hash2, (uint8_t *)&hash2 + 4);
     return EncodeBase58(vch);
 }
 
-std::map<ChainType, std::map<AddrType, std::vector<uint8_t>>> base58Prefixes = {
+std::map<uint8_t , std::map<uint8_t , std::vector<uint8_t>>> base58Prefixes = {
     {ChainType::MAIN, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 0)}}},
     {ChainType::MAIN, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 5)}}},
     {ChainType::TEST, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 111)}}},
@@ -450,7 +456,22 @@ std::map<ChainType, std::map<AddrType, std::vector<uint8_t>>> base58Prefixes = {
 };
 
 std::string EncodeLegacyAddr(CashAddrContent content) {
-    std::vector<uint8_t> data = base58Prefixes[content.chainType][content.type];
+//    std::vector<uint8_t> data = base58Prefixes[content.chainType][content.type];
+    std::vector <uint8_t> data;
+    if (content.chainType == ChainType::MAIN) {
+        if (content.type == AddrType::PUBKEY) {
+            data.push_back(0);
+        } else {
+            data.push_back(5);
+        }
+    } else {
+        // REGTEST or TESTNET
+        if (content.type == AddrType::PUBKEY) {
+            data.push_back(111);
+        } else {
+            data.push_back(196);
+        }
+    }
     data.insert(data.end(), content.hash.begin(), content.hash.end());
     return EncodeBase58Check(data);
 }
