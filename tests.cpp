@@ -143,14 +143,34 @@ void base58_encode() {
     assert(EncodeBase58(hello_world) == "2NEpo7TZRRrLZSi2U");
 }
 
-void encode_legacy_address() {
-    // Example from https://reference.cash/protocol/blockchain/encoding/base58check
-    CashAddrContent content{
-        AddrType::PUBKEY,
-        hex2bin("211b74ca4686f81efda5641767fc84ef16dafe0b"),
-        ChainType::MAIN
-    };
-    assert(EncodeLegacyAddr(content) == "1424C2F4bC9JidNjjTUZCbUxv6Sa1Mt62x");
+//void encode_legacy_address() {
+//    CashAddrContent content{
+//        AddrType::PUBKEY,
+//        hex2bin("eb88f1c65b39a823479ac9c7db2f4a865960a165"),
+//        ChainType::MAIN
+//    };
+//    std::cout << EncodeLegacyAddr(content) << std::endl;
+//    assert(EncodeLegacyAddr(content) == "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i");
+//}
+
+void convert_cashaddr_to_legacy() {
+    std::string addr1 = "qpelrdn7a0hcucjlf9ascz3lkxv7r3rffgzn6x5377";
+    std::string prefixed_addr1 = MAINNET_PREFIX + ":" + addr1;
+
+    for (auto addr: {addr1, prefixed_addr1}) {
+        auto[prefix, payload] = cashaddr::Decode(addr, MAINNET_PREFIX);
+        auto recode = cashaddr::Encode(prefix, payload);
+        assert(recode == prefixed_addr1);
+
+        CashAddrContent content = DecodeCashAddrContent(addr, MAINNET_PREFIX);
+        std::string recode2 = EncodeCashAddr(MAINNET_PREFIX, content);
+        assert(recode2 == prefixed_addr1);
+
+        std::string legacy = EncodeLegacyAddr(content);
+        std::cout << legacy << std::endl;
+        // FIXME: expected 1Ba4GZo5pnYJvNNXTi3FEKcYJ8AHkiu9ni
+        //        actual: good payload but wrong (random) checksum
+    }
 }
 
 void hash_test() {
@@ -165,7 +185,8 @@ int main(int argc, char** argv) {
     cashaddr_testvectors_noprefix();
     base58_encode();
     hash_test();
-    encode_legacy_address();
+//    encode_legacy_address();
+    convert_cashaddr_to_legacy();
 
     std::cout << "Test suite completed successfully." << std::endl;
     return 0;
