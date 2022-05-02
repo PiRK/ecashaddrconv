@@ -79,7 +79,7 @@ const std::string REGTEST_PREFIX = "ecreg";
 const std::string ETOKEN_PREFIX = "etoken";
 
 enum AddrType : uint8_t { PUBKEY = 0, SCRIPT = 1 };
-enum ChainType : uint8_t { MAIN = 0, TEST = 1, REG = 2 };
+enum ChainType : uint8_t { MAIN = 0, TEST = 1, REG = 2, UNKNOWN = 3 };
 
 struct AddressContent {
     AddrType addressType;
@@ -90,8 +90,22 @@ struct AddressContent {
 std::string EncodeCashAddr(const std::string &prefix,
                            const AddressContent &content);
 
-AddressContent DecodeCashAddrContent(const std::string &addr,
-                                     const std::string &expectedPrefix);
+/**
+ * Decode a cash address.
+ *
+ * The chainType is deduced from the prefix. If the prefix is not one of
+ * "ecash", "ectest", or "ecreg", outContent.chainType will be set to
+ * ChainType::UNKNOWN.
+ *
+ * @param addr Cash address, with or without prefix.
+ * @param expectedPrefix Expected prefix. This is used to verify the checksum
+ *                       part of the address.
+ * @param[out] outContent Address content.
+ * @return true in case of success.
+ */
+bool DecodeCashAddrContent(const std::string &addr,
+                           const std::string &expectedPrefix,
+                           AddressContent &outContent);
 
 std::string EncodeBase58(std::vector<uint8_t> input);
 
@@ -106,7 +120,7 @@ bool DecodeBase58Check(const std::string &str, std::vector<uint8_t> &vchRet,
 std::string EncodeLegacyAddr(AddressContent content);
 
 /**
- * Decode a legacy address, return true in case of success.
+ * Decode a legacy address.
  *
  * Note that this function cannot discriminate testnet and regtest addresses,
  * as they are identical in legacy format. In both cases, content.ChainType
@@ -114,7 +128,7 @@ std::string EncodeLegacyAddr(AddressContent content);
  *
  * @param str Legacy address
  * @param[out] outContent Address content.
- * @return
+ * @return true in case of success.
  */
 bool DecodeLegacyAddr(const std::string &str, AddressContent &outContent);
 

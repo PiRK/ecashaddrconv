@@ -202,10 +202,11 @@ void hash_testvectors() {
     assert(hash3[31] == 0x58);
 }
 
-void encode_legacy_address() {
-    std::vector<std::pair<std::string, AddressContent>> vectors = {
+void decode_encode_address_content() {
+    std::vector<std::tuple<std::string, std::string, AddressContent>> vectors = {
         {
             "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i",
+            "ecash:qpj6zczese9zlk78exdywgag89duduvgavmld27rw2",
             {
                 AddrType::PUBKEY,
                 hex2bin("65a16059864a2fdbc7c99a4723a8395bc6f188eb"),
@@ -214,6 +215,7 @@ void encode_legacy_address() {
         },
         {
             "3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou",
+            "ecash:pp60yz0ka2g8ut4y3a604czhs2hg5ejj2u37npfnk5",
             {
                 AddrType::SCRIPT,
                 hex2bin("74f209f6ea907e2ea48f74fae05782ae8a665257"),
@@ -222,6 +224,7 @@ void encode_legacy_address() {
         },
         {
             "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
+            "ectest:qpfuqvradpg65r88sfd63q7xhkddys45scc07d7pk5",
             {
                 AddrType::PUBKEY,
                 hex2bin("53c0307d6851aa0ce7825ba883c6bd9ad242b486"),
@@ -230,6 +233,7 @@ void encode_legacy_address() {
         },
         {
             "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
+            "ectest:pp35nfqcl3zh35g2xu44fdzu9qxv33pc9u2q0rkcs9",
             {
                 AddrType::SCRIPT,
                 hex2bin("6349a418fc4578d10a372b54b45c280cc8c4382f"),
@@ -238,6 +242,7 @@ void encode_legacy_address() {
         },
         {
             "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
+            "ecreg:qpfuqvradpg65r88sfd63q7xhkddys45scr94988sn",
             {
                 AddrType::PUBKEY,
                 hex2bin("53c0307d6851aa0ce7825ba883c6bd9ad242b486"),
@@ -246,6 +251,7 @@ void encode_legacy_address() {
         },
         {
             "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
+            "ecreg:pp35nfqcl3zh35g2xu44fdzu9qxv33pc9u32yt07kz",
             {
                 AddrType::SCRIPT,
                 hex2bin("6349a418fc4578d10a372b54b45c280cc8c4382f"),
@@ -254,11 +260,12 @@ void encode_legacy_address() {
         }
     };
 
-    for(auto [addr, content]: vectors) {
-        assert(EncodeLegacyAddr(content) == addr);
+    for(auto [legacyAddr, cashAddr, content]: vectors) {
+        // legacy
+        assert(EncodeLegacyAddr(content) == legacyAddr);
 
         AddressContent decodedContent;
-        assert(DecodeLegacyAddr(addr, decodedContent));
+        assert(DecodeLegacyAddr(legacyAddr, decodedContent));
         assert(decodedContent.addressType == content.addressType);
         if (content.chainType != decodedContent.chainType) {
             // The legacy format does not discriminate testnet and regtest
@@ -266,6 +273,24 @@ void encode_legacy_address() {
             assert(content.chainType == ChainType::REG &&
                    decodedContent.chainType == ChainType::TEST);
         }
+        assert_vectors_equal(decodedContent.hash, content.hash);
+
+        // cash address
+        std::string expected_prefix;
+        if (content.chainType == ChainType::MAIN) {
+            expected_prefix = MAINNET_PREFIX;
+        } else if (content.chainType == ChainType::TEST) {
+            expected_prefix = TESTNET_PREFIX;
+        } else {
+            expected_prefix = REGTEST_PREFIX;
+        }
+
+        assert(EncodeCashAddr(expected_prefix, content) == cashAddr);
+        AddressContent decodedContent2;
+        assert(DecodeCashAddrContent(cashAddr, expected_prefix, decodedContent2));
+        assert(decodedContent2.chainType == content.chainType);
+        assert(decodedContent2.addressType == content.addressType);
+        assert_vectors_equal(decodedContent2.hash, content.hash);
     }
 }
 
@@ -278,7 +303,8 @@ void convert_cashaddr_to_legacy() {
         auto recode = cashaddr::Encode(prefix, payload);
         assert(recode == prefixed_addr1);
 
-        AddressContent content = DecodeCashAddrContent(addr, MAINNET_PREFIX);
+        AddressContent content;
+        assert(DecodeCashAddrContent(addr, MAINNET_PREFIX, content));
         std::string recode2 = EncodeCashAddr(MAINNET_PREFIX, content);
         assert(recode2 == prefixed_addr1);
 
@@ -295,7 +321,7 @@ int main(int argc, char** argv) {
     cashaddr_testvectors_noprefix();
     base58_encode_decode();
     hash_testvectors();
-    encode_legacy_address();
+    decode_encode_address_content();
     convert_cashaddr_to_legacy();
 
     std::cout << "Test suite completed successfully." << std::endl;

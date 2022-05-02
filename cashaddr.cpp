@@ -211,8 +211,8 @@ std::string Encode(const std::string &prefix, const std::vector<uint8_t> &payloa
 /**
 * Decode a cashaddr string.
 */
-std::pair<std::string, std::vector<uint8_t>> Decode(const std::string &str,
-                                    const std::string &default_prefix) {
+std::pair<std::string, std::vector<uint8_t>> Decode(
+        const std::string &str, const std::string &default_prefix) {
     // Go over the string and do some sanity checks.
     bool lower = false, upper = false, hasNumber = false;
     size_t prefixSize = 0;
@@ -345,30 +345,42 @@ std::string EncodeCashAddr(const std::string &prefix,
     return cashaddr::Encode(prefix, data);
 }
 
-AddressContent DecodeCashAddrContent(const std::string &addr,
-                                     const std::string &expectedPrefix) {
+bool DecodeCashAddrContent(const std::string &addr,
+                           const std::string &expectedPrefix,
+                           AddressContent &outContent) {
     auto [prefix, payload] = cashaddr::Decode(addr, expectedPrefix);
 
     if (prefix != expectedPrefix) {
-        return {};
+        return false;
+    }
+    ChainType chainType = ChainType::UNKNOWN;
+    // Attempt to detect the chain type from the prefix.
+    if (prefix == MAINNET_PREFIX) {
+        chainType = ChainType::MAIN;
+    } else if (prefix == TESTNET_PREFIX) {
+        chainType = ChainType::TEST;
+    } else if (prefix == REGTEST_PREFIX) {
+        chainType = ChainType::REG;
+    } else {
+        chainType = ChainType::UNKNOWN;
     }
 
     if (payload.empty()) {
-        return {};
+        return false;
     }
 
     std::vector<uint8_t> data;
     data.reserve(payload.size() * 5 / 8);
     if (!ConvertBits<5, 8, false>([&](uint8_t c) { data.push_back(c); },
                                   begin(payload), end(payload))) {
-        return {};
+        return false;
     }
 
     // Decode type and size from the version.
     uint8_t version = data[0];
     if (version & 0x80) {
         // First bit is reserved.
-        return {};
+        return false;
     }
 
     auto type = AddrType((version >> 3) & 0x1f);
@@ -379,12 +391,13 @@ AddressContent DecodeCashAddrContent(const std::string &addr,
 
     // Check that we decoded the exact number of bytes we expected.
     if (data.size() != hash_size + 1) {
-        return {};
+        return false;
     }
 
     // Pop the version.
     data.erase(data.begin());
-    return {type, std::move(data)};
+    outContent = {type, std::move(data), chainType};
+    return true;
 }
 
 /** All alphanumeric characters except for "0", "I", "O", and "l" */
@@ -608,6 +621,8 @@ bool DecodeLegacyAddr(const std::string &str,
             // invalid base58 prefix
             return false;
     }
-    outContent.hash = data;
+    // Pop the version.
+    data.erase(data.begin());
+    outContent.hash = std::move(data);
     return true;
 }
