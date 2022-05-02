@@ -94,8 +94,28 @@ AddressContent DecodeCashAddrContent(const std::string &addr,
                                      const std::string &expectedPrefix);
 
 std::string EncodeBase58(std::vector<uint8_t> input);
+
 std::string EncodeBase58Check(std::vector<uint8_t> input);
 
+bool DecodeBase58(const std::string &str, std::vector<uint8_t> &vch,
+                  int max_ret_len);
+
+bool DecodeBase58Check(const std::string &str, std::vector<uint8_t> &vchRet,
+                       int max_ret_len);
+
 std::string EncodeLegacyAddr(AddressContent content);
+
+/**
+ * Decode a legacy address, return true in case of success.
+ *
+ * Note that this function cannot discriminate testnet and regtest addresses,
+ * as they are identical in legacy format. In both cases, content.ChainType
+ * will be ChainType::TEST.
+ *
+ * @param str Legacy address
+ * @param[out] outContent Address content.
+ * @return
+ */
+bool DecodeLegacyAddr(const std::string &str, AddressContent &outContent);
 
 #endif // CASHADDR_H

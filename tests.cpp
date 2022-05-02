@@ -135,12 +135,47 @@ void cashaddr_testvectors_noprefix() {
     }
 }
 
-void base58_encode() {
+void base58_encode_decode() {
+    // Encode
     assert(EncodeBase58({100}) == "2j");
     assert(EncodeBase58({0x27, 0x0f}) == "3yQ");
     std::vector<uint8_t> hello_world = {
         0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x21};
     assert(EncodeBase58(hello_world) == "2NEpo7TZRRrLZSi2U");
+
+    // Decode
+    std::vector<uint8_t> vch;
+    assert(DecodeBase58("2j", vch, 1000));
+    assert(vch[0] == 100);
+
+    vch.clear();
+    assert(DecodeBase58("2NEpo7TZRRrLZSi2U", vch, 1000));
+    assert_vectors_equal(vch, hello_world);
+
+    // Illegal Base58 characters
+    vch.clear();
+    assert(!DecodeBase58("2NEpo7TZRRrLZSi2UiIL0O", vch, 1000));
+
+    // Base58Check
+    vch.clear();
+    assert(DecodeBase58Check("1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i", vch, 21));
+    // Expected 0065a16059864a2fdbc7c99a4723a8395bc6f188eb
+    assert(vch[0] == 0 && vch[1] == 0x65 && vch[20] == 0xeb);
+
+    vch.clear();
+    assert(DecodeBase58Check("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou", vch, 21));
+    // Expected 0574f209f6ea907e2ea48f74fae05782ae8a665257
+    assert(vch[0] == 5 && vch[1] == 0x74 && vch[20] == 0x57);
+
+    vch.clear();
+    assert(DecodeBase58Check("mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs", vch, 21));
+    // Expected 6f53c0307d6851aa0ce7825ba883c6bd9ad242b486
+    assert(vch[0] == 0x6f && vch[1] == 0x53 && vch[20] == 0x86);
+
+    vch.clear();
+    assert(DecodeBase58Check("2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br", vch, 21));
+    // Expected 6349a418fc4578d10a372b54b45c280cc8c4382f
+    assert(vch[0] == 0xc4 && vch[1] == 0x63 && vch[20] == 0x2f);
 }
 
 void hash_testvectors() {
@@ -221,6 +256,16 @@ void encode_legacy_address() {
 
     for(auto [addr, content]: vectors) {
         assert(EncodeLegacyAddr(content) == addr);
+
+        AddressContent decodedContent;
+        assert(DecodeLegacyAddr(addr, decodedContent));
+        assert(decodedContent.addressType == content.addressType);
+        if (content.chainType != decodedContent.chainType) {
+            // The legacy format does not discriminate testnet and regtest
+            // addresses, so DecodeLegacyAddr returns ChainType::TEST.
+            assert(content.chainType == ChainType::REG &&
+                   decodedContent.chainType == ChainType::TEST);
+        }
     }
 }
 
@@ -248,7 +293,7 @@ int main(int argc, char** argv) {
     cashaddr_testvectors_invalid();
     cashaddr_rawencode();
     cashaddr_testvectors_noprefix();
-    base58_encode();
+    base58_encode_decode();
     hash_testvectors();
     encode_legacy_address();
     convert_cashaddr_to_legacy();
