@@ -338,13 +338,13 @@ std::vector<uint8_t> PackAddrData(const std::vector<uint8_t> &hash, uint8_t type
 }
 
 std::string EncodeCashAddr(const std::string &prefix,
-                           const CashAddrContent &content) {
-    std::vector<uint8_t> data = PackAddrData(content.hash, content.type);
+                           const AddressContent &content) {
+    std::vector<uint8_t> data = PackAddrData(content.hash, content.addressType);
     return cashaddr::Encode(prefix, data);
 }
 
-CashAddrContent DecodeCashAddrContent(const std::string &addr,
-                                      const std::string &expectedPrefix) {
+AddressContent DecodeCashAddrContent(const std::string &addr,
+                                     const std::string &expectedPrefix) {
     auto [prefix, payload] = cashaddr::Decode(addr, expectedPrefix);
 
     if (prefix != expectedPrefix) {
@@ -446,27 +446,17 @@ std::string EncodeBase58Check(std::vector<uint8_t> input) {
     return EncodeBase58(vch);
 }
 
-std::map<uint8_t , std::map<uint8_t , std::vector<uint8_t>>> base58Prefixes = {
-    {ChainType::MAIN, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 0)}}},
-    {ChainType::MAIN, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 5)}}},
-    {ChainType::TEST, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 111)}}},
-    {ChainType::TEST, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 196)}}},
-    {ChainType::REG, {{AddrType::PUBKEY, std::vector<uint8_t>(1, 111)}}},
-    {ChainType::REG, {{AddrType::SCRIPT, std::vector<uint8_t>(1, 196)}}},
-};
-
-std::string EncodeLegacyAddr(CashAddrContent content) {
-//    std::vector<uint8_t> data = base58Prefixes[content.chainType][content.type];
+std::string EncodeLegacyAddr(AddressContent content) {
     std::vector <uint8_t> data;
     if (content.chainType == ChainType::MAIN) {
-        if (content.type == AddrType::PUBKEY) {
+        if (content.addressType == AddrType::PUBKEY) {
             data.push_back(0);
         } else {
             data.push_back(5);
         }
     } else {
         // REGTEST or TESTNET
-        if (content.type == AddrType::PUBKEY) {
+        if (content.addressType == AddrType::PUBKEY) {
             data.push_back(111);
         } else {
             data.push_back(196);

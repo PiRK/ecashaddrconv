@@ -81,21 +81,21 @@ const std::string ETOKEN_PREFIX = "etoken";
 enum AddrType : uint8_t { PUBKEY = 0, SCRIPT = 1 };
 enum ChainType : uint8_t { MAIN = 0, TEST = 1, REG = 2 };
 
-struct CashAddrContent {
-    AddrType type;
+struct AddressContent {
+    AddrType addressType;
     std::vector<uint8_t> hash;
     ChainType chainType {ChainType::MAIN};
 };
 
 std::string EncodeCashAddr(const std::string &prefix,
-                           const CashAddrContent &content);
+                           const AddressContent &content);
 
-CashAddrContent DecodeCashAddrContent(const std::string &addr,
-                                      const std::string &expectedPrefix);
+AddressContent DecodeCashAddrContent(const std::string &addr,
+                                     const std::string &expectedPrefix);
 
 std::string EncodeBase58(std::vector<uint8_t> input);
 std::string EncodeBase58Check(std::vector<uint8_t> input);
 
-std::string EncodeLegacyAddr(CashAddrContent content);
+std::string EncodeLegacyAddr(AddressContent content);
 
 #endif // CASHADDR_H

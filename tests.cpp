@@ -168,7 +168,7 @@ void hash_testvectors() {
 }
 
 void encode_legacy_address() {
-    std::vector<std::pair<std::string, CashAddrContent>> vectors = {
+    std::vector<std::pair<std::string, AddressContent>> vectors = {
         {
             "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i",
             {
@@ -233,7 +233,7 @@ void convert_cashaddr_to_legacy() {
         auto recode = cashaddr::Encode(prefix, payload);
         assert(recode == prefixed_addr1);
 
-        CashAddrContent content = DecodeCashAddrContent(addr, MAINNET_PREFIX);
+        AddressContent content = DecodeCashAddrContent(addr, MAINNET_PREFIX);
         std::string recode2 = EncodeCashAddr(MAINNET_PREFIX, content);
         assert(recode2 == prefixed_addr1);
 
