@@ -276,14 +276,7 @@ void decode_encode_address_content() {
         assert_vectors_equal(decodedContent.hash, content.hash);
 
         // cash address
-        std::string expected_prefix;
-        if (content.chainType == ChainType::MAIN) {
-            expected_prefix = MAINNET_PREFIX;
-        } else if (content.chainType == ChainType::TEST) {
-            expected_prefix = TESTNET_PREFIX;
-        } else {
-            expected_prefix = REGTEST_PREFIX;
-        }
+        std::string expected_prefix = PrefixFromChainType(content.chainType);
 
         assert(EncodeCashAddr(expected_prefix, content) == cashAddr);
         AddressContent decodedContent2;
@@ -291,6 +284,13 @@ void decode_encode_address_content() {
         assert(decodedContent2.chainType == content.chainType);
         assert(decodedContent2.addressType == content.addressType);
         assert_vectors_equal(decodedContent2.hash, content.hash);
+
+        // direct conversion (REGTEST excluded because legacy regtest addresses
+        // cannot be differentiated from legacy testnet addresses)
+        if (content.chainType != ChainType::REG) {
+            assert(Legacy2CashAddr(legacyAddr) == cashAddr);
+        }
+        assert(CashAddr2Legacy(cashAddr, expected_prefix) == legacyAddr);
     }
 }
 
@@ -310,7 +310,12 @@ void convert_cashaddr_to_legacy() {
 
         std::string legacy = EncodeLegacyAddr(content);
         assert(legacy == "1Ba4GZo5pnYJvNNXTi3FEKcYJ8AHkiu9ni");
+
+        assert(Legacy2CashAddr(legacy) == prefixed_addr1);
+        assert(CashAddr2Legacy(addr, MAINNET_PREFIX) == legacy);
     }
+
+
 }
 
 int main(int argc, char** argv) {

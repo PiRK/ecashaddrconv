@@ -345,6 +345,22 @@ std::string EncodeCashAddr(const std::string &prefix,
     return cashaddr::Encode(prefix, data);
 }
 
+static ChainType ChainTypeFromPrefix(const std::string &prefix) {
+    ChainType chainType = ChainType::UNKNOWN;
+    // Attempt to detect the chain type from the prefix.
+    if (prefix == MAINNET_PREFIX) {
+        return ChainType::MAIN;
+    }
+    if (prefix == TESTNET_PREFIX) {
+        return ChainType::TEST;
+    }
+    if (prefix == REGTEST_PREFIX) {
+        return ChainType::REG;
+    }
+    return ChainType::UNKNOWN;
+}
+
+
 bool DecodeCashAddrContent(const std::string &addr,
                            const std::string &expectedPrefix,
                            AddressContent &outContent) {
@@ -353,17 +369,8 @@ bool DecodeCashAddrContent(const std::string &addr,
     if (prefix != expectedPrefix) {
         return false;
     }
-    ChainType chainType = ChainType::UNKNOWN;
-    // Attempt to detect the chain type from the prefix.
-    if (prefix == MAINNET_PREFIX) {
-        chainType = ChainType::MAIN;
-    } else if (prefix == TESTNET_PREFIX) {
-        chainType = ChainType::TEST;
-    } else if (prefix == REGTEST_PREFIX) {
-        chainType = ChainType::REG;
-    } else {
-        chainType = ChainType::UNKNOWN;
-    }
+
+    auto chainType = ChainTypeFromPrefix(prefix);
 
     if (payload.empty()) {
         return false;
@@ -625,4 +632,41 @@ bool DecodeLegacyAddr(const std::string &str,
     data.erase(data.begin());
     outContent.hash = std::move(data);
     return true;
+}
+
+std::string PrefixFromChainType(const ChainType &chainType) {
+    // cash address
+    std::string expected_prefix;
+    if (chainType == ChainType::MAIN) {
+        return MAINNET_PREFIX;
+    }
+    if (chainType == ChainType::TEST) {
+        return TESTNET_PREFIX;
+    }
+    if (chainType == ChainType::REG) {
+        return REGTEST_PREFIX;
+    }
+    return "";
+}
+
+
+std::string Legacy2CashAddr(const std::string &legacyAddr) {
+    AddressContent content;
+    if (!DecodeLegacyAddr(legacyAddr, content)) {
+        return "";
+    }
+    auto prefix = PrefixFromChainType(content.chainType);
+    // Prefix must be set because the chain type is always known for a valid
+    // legacy address.
+    assert(!prefix.empty());
+    return EncodeCashAddr(prefix, content);
+}
+
+std::string CashAddr2Legacy(const std::string &cashAddr,
+                            const std::string &expectedPrefix) {
+    AddressContent content;
+    if (!DecodeCashAddrContent(cashAddr, expectedPrefix, content)) {
+         return "";
+    }
+    return EncodeLegacyAddr(content);
 }

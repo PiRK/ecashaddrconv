@@ -132,4 +132,30 @@ std::string EncodeLegacyAddr(AddressContent content);
  */
 bool DecodeLegacyAddr(const std::string &str, AddressContent &outContent);
 
+std::string PrefixFromChainType(const ChainType &chainType);
+
+/**
+ * Convert a legacy address to a CashAddress.
+ *
+ * The prefix "ecash:" or "ectest:" is determined from the address version byte.
+ *
+ * @param legacyAddr Legacy address.
+ * @return Cash address or empty string in case of failure
+ */
+std::string Legacy2CashAddr(const std::string &legacyAddr);
+
+/**
+ * Convert a cash address to a legacy address.
+ *
+ * @param cashAddr  Cash address. The prefix can be specified or omitted.
+ * @param expectedPrefix Specify the expected prefix. This is used to verify the
+ *                       checksum suffix of the address.
+ *                       This parameter can be omitted when working only with
+ *                       main net "ecash:" addresses.
+ * @return Legacy address or empty string in case of failure
+ */
+// TODO: make expectedPrefix really optional when the address has it and it is
+//       correct. For now, not specifying it only works for mainnet.
+std::string CashAddr2Legacy(const std::string &cashAddr,
+                            const std::string &expectedPrefix=MAINNET_PREFIX);
 #endif // CASHADDR_H
