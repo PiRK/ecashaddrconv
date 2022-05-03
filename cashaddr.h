@@ -76,13 +76,12 @@ Decode(const std::string &str, const std::string &default_prefix);
 const std::string MAINNET_PREFIX = "ecash";
 const std::string TESTNET_PREFIX = "ectest";
 const std::string REGTEST_PREFIX = "ecreg";
-const std::string ETOKEN_PREFIX = "etoken";
 
-enum AddrType : uint8_t { PUBKEY = 0, SCRIPT = 1 };
+enum AddressType : uint8_t { PUBKEY = 0, SCRIPT = 1 };
 enum ChainType : uint8_t { MAIN = 0, TEST = 1, REG = 2, UNKNOWN = 3 };
 
 struct AddressContent {
-    AddrType addressType;
+    AddressType addressType;
     std::vector<uint8_t> hash;
     ChainType chainType {ChainType::MAIN};
 };
@@ -95,8 +94,8 @@ struct AddressContent {
  *                hash) and chain parameters (main chain, testnet, or regtest).
  * @return cash address
  */
-std::string EncodeCashAddr(const std::string &prefix,
-                           const AddressContent &content);
+std::string EncodeCashAddress(const std::string &prefix,
+                              const AddressContent &content);
 
 /**
  * Decode a cash address.
@@ -105,15 +104,15 @@ std::string EncodeCashAddr(const std::string &prefix,
  * "ecash", "ectest", or "ecreg", outContent.chainType will be set to
  * ChainType::UNKNOWN.
  *
- * @param addr Cash address, with or without prefix.
+ * @param address Cash address, with or without prefix.
  * @param expectedPrefix Expected prefix. This is used to verify the checksum
  *                       part of the address.
  * @param[out] outContent Address content.
  * @return true in case of success.
  */
-bool DecodeCashAddrContent(const std::string &addr,
-                           const std::string &expectedPrefix,
-                           AddressContent &outContent);
+bool DecodeCashAddress(const std::string &address,
+                       const std::string &expectedPrefix,
+                       AddressContent &outContent);
 
 std::string EncodeBase58(std::vector<uint8_t> input);
 
@@ -132,7 +131,7 @@ bool DecodeBase58Check(const std::string &str, std::vector<uint8_t> &vchRet,
  *                hash) and chain parameters.
  * @return cash address
  */
-std::string EncodeLegacyAddr(AddressContent content);
+std::string EncodeLegacyAddress(AddressContent content);
 
 /**
  * Decode a legacy address.
@@ -145,7 +144,7 @@ std::string EncodeLegacyAddr(AddressContent content);
  * @param[out] outContent Address content.
  * @return true in case of success.
  */
-bool DecodeLegacyAddr(const std::string &str, AddressContent &outContent);
+bool DecodeLegacyAddress(const std::string &str, AddressContent &outContent);
 
 std::string PrefixFromChainType(const ChainType &chainType);
 
@@ -157,7 +156,7 @@ std::string PrefixFromChainType(const ChainType &chainType);
  * @param legacyAddr Legacy address.
  * @return Cash address or empty string in case of failure
  */
-std::string Legacy2CashAddr(const std::string &legacyAddr);
+std::string Legacy2CashAddress(const std::string &legacyAddr);
 
 /**
  * Convert a cash address to a legacy address.
@@ -171,6 +170,6 @@ std::string Legacy2CashAddr(const std::string &legacyAddr);
  */
 // TODO: make expectedPrefix really optional when the address has it and it is
 //       correct. For now, not specifying it only works for mainnet.
-std::string CashAddr2Legacy(const std::string &cashAddr,
-                            const std::string &expectedPrefix=MAINNET_PREFIX);
+std::string CashAddress2Legacy(const std::string &cashAddr,
+                               const std::string &expectedPrefix=MAINNET_PREFIX);
 #endif // CASHADDR_H

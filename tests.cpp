@@ -7,6 +7,8 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <vector>
+
 #include <openssl/sha.h>
 
 // convert string to back to lower case
@@ -212,7 +214,7 @@ void decode_encode_address_content() {
             "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i",
             "ecash:qpj6zczese9zlk78exdywgag89duduvgavmld27rw2",
             {
-                AddrType::PUBKEY,
+                AddressType::PUBKEY,
                 hex2bin("65a16059864a2fdbc7c99a4723a8395bc6f188eb"),
                 ChainType::MAIN
             }
@@ -221,7 +223,7 @@ void decode_encode_address_content() {
             "3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou",
             "ecash:pp60yz0ka2g8ut4y3a604czhs2hg5ejj2u37npfnk5",
             {
-                AddrType::SCRIPT,
+                AddressType::SCRIPT,
                 hex2bin("74f209f6ea907e2ea48f74fae05782ae8a665257"),
                 ChainType::MAIN
             }
@@ -230,7 +232,7 @@ void decode_encode_address_content() {
             "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
             "ectest:qpfuqvradpg65r88sfd63q7xhkddys45scc07d7pk5",
             {
-                AddrType::PUBKEY,
+                AddressType::PUBKEY,
                 hex2bin("53c0307d6851aa0ce7825ba883c6bd9ad242b486"),
                 ChainType::TEST
             }
@@ -239,7 +241,7 @@ void decode_encode_address_content() {
             "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
             "ectest:pp35nfqcl3zh35g2xu44fdzu9qxv33pc9u2q0rkcs9",
             {
-                AddrType::SCRIPT,
+                AddressType::SCRIPT,
                 hex2bin("6349a418fc4578d10a372b54b45c280cc8c4382f"),
                 ChainType::TEST
             }
@@ -248,7 +250,7 @@ void decode_encode_address_content() {
             "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
             "ecreg:qpfuqvradpg65r88sfd63q7xhkddys45scr94988sn",
             {
-                AddrType::PUBKEY,
+                AddressType::PUBKEY,
                 hex2bin("53c0307d6851aa0ce7825ba883c6bd9ad242b486"),
                 ChainType::REG
             }
@@ -257,7 +259,7 @@ void decode_encode_address_content() {
             "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
             "ecreg:pp35nfqcl3zh35g2xu44fdzu9qxv33pc9u32yt07kz",
             {
-                AddrType::SCRIPT,
+                AddressType::SCRIPT,
                 hex2bin("6349a418fc4578d10a372b54b45c280cc8c4382f"),
                 ChainType::REG
             }
@@ -266,14 +268,14 @@ void decode_encode_address_content() {
 
     for(auto [legacyAddr, cashAddr, content]: vectors) {
         // legacy
-        assert(EncodeLegacyAddr(content) == legacyAddr);
+        assert(EncodeLegacyAddress(content) == legacyAddr);
 
         AddressContent decodedContent;
-        assert(DecodeLegacyAddr(legacyAddr, decodedContent));
+        assert(DecodeLegacyAddress(legacyAddr, decodedContent));
         assert(decodedContent.addressType == content.addressType);
         if (content.chainType != decodedContent.chainType) {
             // The legacy format does not discriminate testnet and regtest
-            // addresses, so DecodeLegacyAddr returns ChainType::TEST.
+            // addresses, so DecodeLegacyAddress returns ChainType::TEST.
             assert(content.chainType == ChainType::REG &&
                    decodedContent.chainType == ChainType::TEST);
         }
@@ -282,9 +284,9 @@ void decode_encode_address_content() {
         // cash address
         std::string expected_prefix = PrefixFromChainType(content.chainType);
 
-        assert(EncodeCashAddr(expected_prefix, content) == cashAddr);
+        assert(EncodeCashAddress(expected_prefix, content) == cashAddr);
         AddressContent decodedContent2;
-        assert(DecodeCashAddrContent(cashAddr, expected_prefix, decodedContent2));
+        assert(DecodeCashAddress(cashAddr, expected_prefix, decodedContent2));
         assert(decodedContent2.chainType == content.chainType);
         assert(decodedContent2.addressType == content.addressType);
         assert_vectors_equal(decodedContent2.hash, content.hash);
@@ -292,9 +294,9 @@ void decode_encode_address_content() {
         // direct conversion (REGTEST excluded because legacy regtest addresses
         // cannot be differentiated from legacy testnet addresses)
         if (content.chainType != ChainType::REG) {
-            assert(Legacy2CashAddr(legacyAddr) == cashAddr);
+            assert(Legacy2CashAddress(legacyAddr) == cashAddr);
         }
-        assert(CashAddr2Legacy(cashAddr, expected_prefix) == legacyAddr);
+        assert(CashAddress2Legacy(cashAddr, expected_prefix) == legacyAddr);
     }
 }
 
@@ -308,15 +310,15 @@ void convert_cashaddr_to_legacy() {
         assert(recode == prefixed_addr1);
 
         AddressContent content;
-        assert(DecodeCashAddrContent(addr, MAINNET_PREFIX, content));
-        std::string recode2 = EncodeCashAddr(MAINNET_PREFIX, content);
+        assert(DecodeCashAddress(addr, MAINNET_PREFIX, content));
+        std::string recode2 = EncodeCashAddress(MAINNET_PREFIX, content);
         assert(recode2 == prefixed_addr1);
 
-        std::string legacy = EncodeLegacyAddr(content);
+        std::string legacy = EncodeLegacyAddress(content);
         assert(legacy == "1Ba4GZo5pnYJvNNXTi3FEKcYJ8AHkiu9ni");
 
-        assert(Legacy2CashAddr(legacy) == prefixed_addr1);
-        assert(CashAddr2Legacy(addr, MAINNET_PREFIX) == legacy);
+        assert(Legacy2CashAddress(legacy) == prefixed_addr1);
+        assert(CashAddress2Legacy(addr, MAINNET_PREFIX) == legacy);
     }
 
 

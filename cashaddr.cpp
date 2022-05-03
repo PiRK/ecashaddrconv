@@ -291,7 +291,7 @@ std::pair<std::string, std::vector<uint8_t>> Decode(
 }
 
 // Convert the data part to a 5 bit representation.
-std::vector<uint8_t> PackAddrData(const std::vector<uint8_t> &hash, uint8_t type) {
+std::vector<uint8_t> PackAddressData(const std::vector<uint8_t> &hash, uint8_t type) {
     uint8_t version_byte(type << 3);
     size_t size = hash.size();
     uint8_t encoded_size = 0;
@@ -339,9 +339,9 @@ std::vector<uint8_t> PackAddrData(const std::vector<uint8_t> &hash, uint8_t type
     return converted;
 }
 
-std::string EncodeCashAddr(const std::string &prefix,
-                           const AddressContent &content) {
-    std::vector<uint8_t> data = PackAddrData(content.hash, content.addressType);
+std::string EncodeCashAddress(const std::string &prefix,
+                              const AddressContent &content) {
+    std::vector<uint8_t> data = PackAddressData(content.hash, content.addressType);
     return cashaddr::Encode(prefix, data);
 }
 
@@ -361,9 +361,9 @@ static ChainType ChainTypeFromPrefix(const std::string &prefix) {
 }
 
 
-bool DecodeCashAddrContent(const std::string &addr,
-                           const std::string &expectedPrefix,
-                           AddressContent &outContent) {
+bool DecodeCashAddress(const std::string &addr,
+                       const std::string &expectedPrefix,
+                       AddressContent &outContent) {
     auto [prefix, payload] = cashaddr::Decode(addr, expectedPrefix);
 
     if (prefix != expectedPrefix) {
@@ -390,7 +390,7 @@ bool DecodeCashAddrContent(const std::string &addr,
         return false;
     }
 
-    auto type = AddrType((version >> 3) & 0x1f);
+    auto type = AddressType((version >> 3) & 0x1f);
     uint32_t hash_size = 20 + 4 * (version & 0x03);
     if (version & 0x04) {
         hash_size *= 2;
@@ -579,17 +579,17 @@ bool DecodeBase58Check(const std::string &str, std::vector<uint8_t> &vchRet,
     return true;
 }
 
-std::string EncodeLegacyAddr(AddressContent content) {
+std::string EncodeLegacyAddress(AddressContent content) {
     std::vector <uint8_t> data;
     if (content.chainType == ChainType::MAIN) {
-        if (content.addressType == AddrType::PUBKEY) {
+        if (content.addressType == AddressType::PUBKEY) {
             data.push_back(0);
         } else {
             data.push_back(5);
         }
     } else {
         // REGTEST or TESTNET
-        if (content.addressType == AddrType::PUBKEY) {
+        if (content.addressType == AddressType::PUBKEY) {
             data.push_back(111);
         } else {
             data.push_back(196);
@@ -599,8 +599,8 @@ std::string EncodeLegacyAddr(AddressContent content) {
     return EncodeBase58Check(data);
 }
 
-bool DecodeLegacyAddr(const std::string &str,
-                      AddressContent &outContent) {
+bool DecodeLegacyAddress(const std::string &str,
+                         AddressContent &outContent) {
     std::vector<uint8_t> data;
     if (!DecodeBase58Check(str, data, 21) || data.size() != 21) {
         // the user should check for content.hash.empty()
@@ -609,19 +609,19 @@ bool DecodeLegacyAddr(const std::string &str,
 
     switch(data[0]) {
         case 0:
-            outContent.addressType = AddrType::PUBKEY;
+            outContent.addressType = AddressType::PUBKEY;
             outContent.chainType = ChainType::MAIN;
             break;
         case 5:
-            outContent.addressType = AddrType::SCRIPT;
+            outContent.addressType = AddressType::SCRIPT;
             outContent.chainType = ChainType::MAIN;
             break;
         case 111:
-            outContent.addressType = AddrType::PUBKEY;
+            outContent.addressType = AddressType::PUBKEY;
             outContent.chainType = ChainType::TEST;
             break;
         case 196:
-            outContent.addressType = AddrType::SCRIPT;
+            outContent.addressType = AddressType::SCRIPT;
             outContent.chainType = ChainType::TEST;
             break;
         default:
@@ -650,23 +650,23 @@ std::string PrefixFromChainType(const ChainType &chainType) {
 }
 
 
-std::string Legacy2CashAddr(const std::string &legacyAddr) {
+std::string Legacy2CashAddress(const std::string &legacyAddr) {
     AddressContent content;
-    if (!DecodeLegacyAddr(legacyAddr, content)) {
+    if (!DecodeLegacyAddress(legacyAddr, content)) {
         return "";
     }
     auto prefix = PrefixFromChainType(content.chainType);
     // Prefix must be set because the chain type is always known for a valid
     // legacy address.
     assert(!prefix.empty());
-    return EncodeCashAddr(prefix, content);
+    return EncodeCashAddress(prefix, content);
 }
 
-std::string CashAddr2Legacy(const std::string &cashAddr,
+std::string CashAddress2Legacy(const std::string &cashAddr,
                             const std::string &expectedPrefix) {
     AddressContent content;
-    if (!DecodeCashAddrContent(cashAddr, expectedPrefix, content)) {
+    if (!DecodeCashAddress(cashAddr, expectedPrefix, content)) {
          return "";
     }
-    return EncodeLegacyAddr(content);
+    return EncodeLegacyAddress(content);
 }

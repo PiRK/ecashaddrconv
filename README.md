@@ -1,5 +1,5 @@
 # ecashaddrconv
-Standalone C++ implementation of cashaddr extracted from Bitcoin ABC.
+Standalone C++ implementation of CashAddr extracted from Bitcoin ABC.
 
 ## Requirements
 This library depends on OpenSSL for the sha256 operation required for computing legacy address checksums.

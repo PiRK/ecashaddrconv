@@ -40,7 +40,7 @@ static std::vector<uint8_t> hex2bin(const std::string &hexstr) {
 
 int main(int argc, char** argv) {
     std::string legacy_address1 = "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i";
-    std::string cash_address1 = Legacy2CashAddr(legacy_address1);
+    std::string cash_address1 = Legacy2CashAddress(legacy_address1);
 
     std::cout << "Legacy address: " << legacy_address1 << "\nCash address: "
               << cash_address1 << std::endl;
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
     std::string expected_prefix2 = "ectest";
     std::string cash_address2 = "qpfuqvradpg65r88sfd63q7xhkddys45scc07d7pk5";
-    std::string legacy_address2 = CashAddr2Legacy(cash_address2, expected_prefix2);
+    std::string legacy_address2 = CashAddress2Legacy(cash_address2, expected_prefix2);
     std::cout << "Testnet cash address: " << cash_address2
               << "\nLegacy address: " << legacy_address2 << std::endl;
     std::cout << std::endl;
@@ -56,26 +56,26 @@ int main(int argc, char** argv) {
     // The expected prefix can be omitted for main chain addresses
     // (prefix "ecash")
     std::cout << "Cash address: "
-              << CashAddr2Legacy("pp60yz0ka2g8ut4y3a604czhs2hg5ejj2u37npfnk5")
+              << CashAddress2Legacy("pp60yz0ka2g8ut4y3a604czhs2hg5ejj2u37npfnk5")
               << std::endl;
     std::cout << std::endl;
 
     // The cashaddr can be specified with or without the prefix
     std::cout << "Cash address: "
-              << CashAddr2Legacy("ecreg:qpfuqvradpg65r88sfd63q7xhkddys45scr94988sn", "ecreg")
+              << CashAddress2Legacy("ecreg:qpfuqvradpg65r88sfd63q7xhkddys45scr94988sn", "ecreg")
               << std::endl;
     std::cout << "Cash address: "
-              << CashAddr2Legacy("qpfuqvradpg65r88sfd63q7xhkddys45scr94988sn", "ecreg")
+              << CashAddress2Legacy("qpfuqvradpg65r88sfd63q7xhkddys45scr94988sn", "ecreg")
               << std::endl;
     std::cout << std::endl;
 
     // Encode an address from a public key hash or script hash
     AddressContent address_content {
-        AddrType::PUBKEY,
+        AddressType::PUBKEY,
         hex2bin("65a16059864a2fdbc7c99a4723a8395bc6f188eb"),
         ChainType::MAIN};
-    std::cout << "Legacy address: " << EncodeLegacyAddr(address_content)
+    std::cout << "Legacy address: " << EncodeLegacyAddress(address_content)
               << std::endl;
-    std::cout << "Cash address: "  << EncodeCashAddr("ecash", address_content)
+    std::cout << "Cash address: "  << EncodeCashAddress("ecash", address_content)
               << std::endl;
 }
