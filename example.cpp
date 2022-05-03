@@ -5,6 +5,8 @@
 #include "cashaddr.h"
 #include <iostream>
 
+using namespace ecashaddr;
+
 // Helper functions
 
 /** Convert an hexadecimal digit to an integer */

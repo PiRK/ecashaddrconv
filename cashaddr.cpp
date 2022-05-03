@@ -12,29 +12,31 @@
 #include <openssl/sha.h>
 #include <stdexcept>
 
+namespace {
+
 /**
- * The cashaddr character set for encoding.
- */
+* The cashaddr character set for encoding.
+*/
 const char *CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
 /**
- * The cashaddr character set for decoding.
- */
+* The cashaddr character set for decoding.
+*/
 const int8_t CHARSET_REV[128] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, -1, 10, 17, 21, 20, 26, 30, 7,
-    5,  -1, -1, -1, -1, -1, -1, -1, 29, -1, 24, 13, 25, 9,  8,  23, -1, 18, 22,
-    31, 27, 19, -1, 1,  0,  3,  16, 11, 28, 12, 14, 6,  4,  2,  -1, -1, -1, -1,
-    -1, -1, 29, -1, 24, 13, 25, 9,  8,  23, -1, 18, 22, 31, 27, 19, -1, 1,  0,
-    3,  16, 11, 28, 12, 14, 6,  4,  2,  -1, -1, -1, -1, -1};
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, -1, 10, 17, 21, 20, 26, 30, 7,
+        5, -1, -1, -1, -1, -1, -1, -1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22,
+        31, 27, 19, -1, 1, 0, 3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1,
+        -1, -1, 29, -1, 24, 13, 25, 9, 8, 23, -1, 18, 22, 31, 27, 19, -1, 1, 0,
+        3, 16, 11, 28, 12, 14, 6, 4, 2, -1, -1, -1, -1, -1};
 
 /**
- * This function will compute what 8 5-bit values to XOR into the last 8 input
- * values, in order to make the checksum 0. These 8 values are packed together
- * in a single 40-bit integer. The higher bits correspond to earlier values.
- */
-uint64_t PolyMod(const std::vector<uint8_t> &v) {
+* This function will compute what 8 5-bit values to XOR into the last 8 input
+* values, in order to make the checksum 0. These 8 values are packed together
+* in a single 40-bit integer. The higher bits correspond to earlier values.
+*/
+uint64_t PolyMod(const std::vector <uint8_t> &v) {
     /**
      * The input is interpreted as a list of coefficients of a polynomial over F
      * = GF(32), with an implicit 1 in front. If the input is [v0,v1,v2,v3,v4],
@@ -69,7 +71,7 @@ uint64_t PolyMod(const std::vector<uint8_t> &v) {
      * starting value for `c`.
      */
     uint64_t c = 1;
-    for (uint8_t d : v) {
+    for (uint8_t d: v) {
         /**
          * We want to update `c` to correspond to a polynomial with one extra
          * term. If the initial value of `c` consists of the coefficients of
@@ -142,20 +144,20 @@ uint64_t PolyMod(const std::vector<uint8_t> &v) {
 }
 
 /**
- * Convert to lower case.
- *
- * Assume the input is a character.
- */
+* Convert to lower case.
+*
+* Assume the input is a character.
+*/
 inline uint8_t LowerCase(uint8_t c) {
     // ASCII black magic.
     return c | 0x20;
 }
 
 /**
- * Expand the address prefix for the checksum computation.
- */
-std::vector<uint8_t> ExpandPrefix(const std::string &prefix) {
-    std::vector<uint8_t> ret;
+* Expand the address prefix for the checksum computation.
+*/
+std::vector <uint8_t> ExpandPrefix(const std::string &prefix) {
+    std::vector <uint8_t> ret;
     ret.resize(prefix.size() + 1);
     for (size_t i = 0; i < prefix.size(); ++i) {
         ret[i] = prefix[i] & 0x1f;
@@ -166,22 +168,22 @@ std::vector<uint8_t> ExpandPrefix(const std::string &prefix) {
 }
 
 /**
- * Verify a checksum.
- */
-bool VerifyChecksum(const std::string &prefix, const std::vector<uint8_t> &payload) {
+* Verify a checksum.
+*/
+bool VerifyChecksum(const std::string &prefix, const std::vector <uint8_t> &payload) {
     return PolyMod(Cat(ExpandPrefix(prefix), payload)) == 0;
 }
 
 /**
- * Create a checksum.
- */
-std::vector<uint8_t> CreateChecksum(const std::string &prefix, const std::vector<uint8_t> &payload) {
-    std::vector<uint8_t> enc = Cat(ExpandPrefix(prefix), payload);
+* Create a checksum.
+*/
+std::vector <uint8_t> CreateChecksum(const std::string &prefix, const std::vector <uint8_t> &payload) {
+    std::vector <uint8_t> enc = Cat(ExpandPrefix(prefix), payload);
     // Append 8 zeroes.
     enc.resize(enc.size() + 8);
     // Determine what to XOR into those 8 zeroes.
     uint64_t mod = PolyMod(enc);
-    std::vector<uint8_t> ret(8);
+    std::vector <uint8_t> ret(8);
     for (size_t i = 0; i < 8; ++i) {
         // Convert the 5-bit groups in mod to checksum values.
         ret[i] = (mod >> (5 * (7 - i))) & 0x1f;
@@ -190,13 +192,94 @@ std::vector<uint8_t> CreateChecksum(const std::string &prefix, const std::vector
     return ret;
 }
 
+
+// Convert the data part to a 5 bit representation.
+std::vector <uint8_t> PackAddressData(const std::vector <uint8_t> &hash, uint8_t type) {
+    uint8_t version_byte(type << 3);
+    size_t size = hash.size();
+    uint8_t encoded_size = 0;
+    switch (size * 8) {
+        case 160:
+            encoded_size = 0;
+            break;
+        case 192:
+            encoded_size = 1;
+            break;
+        case 224:
+            encoded_size = 2;
+            break;
+        case 256:
+            encoded_size = 3;
+            break;
+        case 320:
+            encoded_size = 4;
+            break;
+        case 384:
+            encoded_size = 5;
+            break;
+        case 448:
+            encoded_size = 6;
+            break;
+        case 512:
+            encoded_size = 7;
+            break;
+        default:
+            throw std::runtime_error(
+                    "Error packing cashaddr: invalid address length");
+    }
+    version_byte |= encoded_size;
+    std::vector <uint8_t> data = {version_byte};
+    data.insert(data.end(), std::begin(hash), std::end(hash));
+
+    std::vector <uint8_t> converted;
+    // Reserve the number of bytes required for a 5-bit packed version of a
+    // hash, with version byte.  Add half a byte(4) so integer math provides
+    // the next multiple-of-5 that would fit all the data.
+    converted.reserve(((size + 1) * 8 + 4) / 5);
+    ConvertBits<8, 5, true>([&](uint8_t c) { converted.push_back(c); },
+                            std::begin(data), std::end(data));
+
+    return converted;
+}
+
+/** All alphanumeric characters except for "0", "I", "O", and "l" */
+static const char *pszBase58 =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static const int8_t mapBase58[256] = {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7,
+        8, -1, -1, -1, -1, -1, -1, -1, 9, 10, 11, 12, 13, 14, 15, 16, -1, 17, 18,
+        19, 20, 21, -1, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, -1, -1, -1, -1,
+        -1, -1, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, -1, 44, 45, 46, 47, 48,
+        49, 50, 51, 52, 53, 54, 55, 56, 57, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1,
+};
+
+
+constexpr inline bool IsSpace(char c) noexcept {
+    return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' ||
+           c == '\v';
+}
+
+
+} // namespace
+
+namespace ecashaddr {
+
 namespace cashaddr {
 /**
 * Encode a cashaddr string.
 */
-std::string Encode(const std::string &prefix, const std::vector<uint8_t> &payload) {
-    std::vector<uint8_t> checksum = CreateChecksum(prefix, payload);
-    std::vector<uint8_t> combined = Cat(payload, checksum);
+std::string Encode(const std::string &prefix, const std::vector <uint8_t> &payload) {
+    std::vector <uint8_t> checksum = CreateChecksum(prefix, payload);
+    std::vector <uint8_t> combined = Cat(payload, checksum);
     // This is a deviation from Bitcoin ABC. We want the output
     std::string ret = prefix + ':';
 
@@ -211,7 +294,7 @@ std::string Encode(const std::string &prefix, const std::vector<uint8_t> &payloa
 /**
 * Decode a cashaddr string.
 */
-std::pair<std::string, std::vector<uint8_t>> Decode(
+std::pair <std::string, std::vector<uint8_t>> Decode(
         const std::string &str, const std::string &default_prefix) {
     // Go over the string and do some sanity checks.
     bool lower = false, upper = false, hasNumber = false;
@@ -270,7 +353,7 @@ std::pair<std::string, std::vector<uint8_t>> Decode(
 
     // Decode values.
     const size_t valuesSize = str.size() - prefixSize;
-    std::vector<uint8_t> values(valuesSize);
+    std::vector <uint8_t> values(valuesSize);
     for (size_t i = 0; i < valuesSize; ++i) {
         uint8_t c = str[i + prefixSize];
         // We have an invalid char in there.
@@ -288,60 +371,13 @@ std::pair<std::string, std::vector<uint8_t>> Decode(
 
     return {std::move(prefix), std::vector<uint8_t>(values.begin(), values.end() - 8)};
 }
-}
 
-// Convert the data part to a 5 bit representation.
-std::vector<uint8_t> PackAddressData(const std::vector<uint8_t> &hash, uint8_t type) {
-    uint8_t version_byte(type << 3);
-    size_t size = hash.size();
-    uint8_t encoded_size = 0;
-    switch (size * 8) {
-        case 160:
-            encoded_size = 0;
-            break;
-        case 192:
-            encoded_size = 1;
-            break;
-        case 224:
-            encoded_size = 2;
-            break;
-        case 256:
-            encoded_size = 3;
-            break;
-        case 320:
-            encoded_size = 4;
-            break;
-        case 384:
-            encoded_size = 5;
-            break;
-        case 448:
-            encoded_size = 6;
-            break;
-        case 512:
-            encoded_size = 7;
-            break;
-        default:
-            throw std::runtime_error(
-                "Error packing cashaddr: invalid address length");
-    }
-    version_byte |= encoded_size;
-    std::vector<uint8_t> data = {version_byte};
-    data.insert(data.end(), std::begin(hash), std::end(hash));
+} // namespace cashaddr
 
-    std::vector<uint8_t> converted;
-    // Reserve the number of bytes required for a 5-bit packed version of a
-    // hash, with version byte.  Add half a byte(4) so integer math provides
-    // the next multiple-of-5 that would fit all the data.
-    converted.reserve(((size + 1) * 8 + 4) / 5);
-    ConvertBits<8, 5, true>([&](uint8_t c) { converted.push_back(c); },
-                            std::begin(data), std::end(data));
-
-    return converted;
-}
 
 std::string EncodeCashAddress(const std::string &prefix,
                               const AddressContent &content) {
-    std::vector<uint8_t> data = PackAddressData(content.hash, content.addressType);
+    std::vector <uint8_t> data = PackAddressData(content.hash, content.addressType);
     return cashaddr::Encode(prefix, data);
 }
 
@@ -364,7 +400,7 @@ static ChainType ChainTypeFromPrefix(const std::string &prefix) {
 bool DecodeCashAddress(const std::string &addr,
                        const std::string &expectedPrefix,
                        AddressContent &outContent) {
-    auto [prefix, payload] = cashaddr::Decode(addr, expectedPrefix);
+    auto[prefix, payload] = cashaddr::Decode(addr, expectedPrefix);
 
     if (prefix != expectedPrefix) {
         return false;
@@ -376,7 +412,7 @@ bool DecodeCashAddress(const std::string &addr,
         return false;
     }
 
-    std::vector<uint8_t> data;
+    std::vector <uint8_t> data;
     data.reserve(payload.size() * 5 / 8);
     if (!ConvertBits<5, 8, false>([&](uint8_t c) { data.push_back(c); },
                                   begin(payload), end(payload))) {
@@ -407,27 +443,7 @@ bool DecodeCashAddress(const std::string &addr,
     return true;
 }
 
-/** All alphanumeric characters except for "0", "I", "O", and "l" */
-static const char *pszBase58 =
-    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-static const int8_t mapBase58[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,
-    8,  -1, -1, -1, -1, -1, -1, -1, 9,  10, 11, 12, 13, 14, 15, 16, -1, 17, 18,
-    19, 20, 21, -1, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, -1, -1, -1, -1,
-    -1, -1, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, -1, 44, 45, 46, 47, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1,
-};
-
-std::string EncodeBase58(std::vector<uint8_t> input) {
+std::string EncodeBase58(std::vector <uint8_t> input) {
     // Skip & count leading zeroes.
     int zeroes = 0;
     int length = 0;
@@ -438,7 +454,7 @@ std::string EncodeBase58(std::vector<uint8_t> input) {
     // Allocate enough space in big-endian base58 representation.
     // log(256) / log(58), rounded up.
     int size = input.size() * 138 / 100 + 1;
-    std::vector<uint8_t> b58(size);
+    std::vector <uint8_t> b58(size);
     // Process the bytes.
     while (input.size() > 0) {
         int carry = input[0];
@@ -470,29 +486,24 @@ std::string EncodeBase58(std::vector<uint8_t> input) {
     return str;
 }
 
-std::string EncodeBase58Check(std::vector<uint8_t> input) {
+std::string EncodeBase58Check(std::vector <uint8_t> input) {
     // add 4-byte hash check to the end
-    std::vector<uint8_t> vch(input.begin(), input.end());
+    std::vector <uint8_t> vch(input.begin(), input.end());
     assert(vch.size() == input.size());
 
     uint8_t hash1[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char*)vch.data(), vch.size(), (unsigned char*)&hash1);
+    SHA256((unsigned char *) vch.data(), vch.size(), (unsigned char *) &hash1);
     uint8_t hash2[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char*)&hash1, SHA256_DIGEST_LENGTH, (unsigned char*)&hash2);
+    SHA256((unsigned char *) &hash1, SHA256_DIGEST_LENGTH, (unsigned char *) &hash2);
 
-    vch.insert(vch.end(), (uint8_t *)&hash2, (uint8_t *)&hash2 + 4);
+    vch.insert(vch.end(), (uint8_t * ) & hash2, (uint8_t * ) & hash2 + 4);
     return EncodeBase58(vch);
 }
 
-constexpr inline bool IsSpace(char c) noexcept {
-    return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' ||
-           c == '\v';
-}
-
-bool DecodeBase58(const std::string &str, std::vector<uint8_t> &vch,
+bool DecodeBase58(const std::string &str, std::vector <uint8_t> &vch,
                   int max_ret_len) {
     const char *psz = str.c_str();
-     // Skip leading spaces.
+    // Skip leading spaces.
     while (*psz && IsSpace(*psz)) {
         psz++;
     }
@@ -509,14 +520,14 @@ bool DecodeBase58(const std::string &str, std::vector<uint8_t> &vch,
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
     int size = strlen(psz) * 733 / 1000 + 1;
-    std::vector<uint8_t> b256(size);
+    std::vector <uint8_t> b256(size);
     // Process the characters.
     // guarantee not out of range
     static_assert(std::size(mapBase58) == 256,
                   "mapBase58.size() should be 256");
     while (*psz && !IsSpace(*psz)) {
         // Decode base58 character
-        int carry = mapBase58[(uint8_t)*psz];
+        int carry = mapBase58[(uint8_t) * psz];
         // Invalid b58 character
         if (carry == -1) {
             return false;
@@ -554,22 +565,22 @@ bool DecodeBase58(const std::string &str, std::vector<uint8_t> &vch,
     return true;
 }
 
-bool DecodeBase58Check(const std::string &str, std::vector<uint8_t> &vchRet,
+bool DecodeBase58Check(const std::string &str, std::vector <uint8_t> &vchRet,
                        int max_ret_len) {
     if (!DecodeBase58(str, vchRet,
                       max_ret_len > std::numeric_limits<int>::max() - 4
-                          ? std::numeric_limits<int>::max()
-                          : max_ret_len + 4) ||
+                      ? std::numeric_limits<int>::max()
+                      : max_ret_len + 4) ||
         (vchRet.size() < 4)) {
         vchRet.clear();
         return false;
     }
     // re-calculate the checksum, ensure it matches the included 4-byte checksum
-    std::vector<uint8_t> payload(vchRet.begin(), vchRet.end() - 4);
+    std::vector <uint8_t> payload(vchRet.begin(), vchRet.end() - 4);
     uint8_t hash1[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char*)payload.data(), payload.size(), (unsigned char*)&hash1);
+    SHA256((unsigned char *) payload.data(), payload.size(), (unsigned char *) &hash1);
     uint8_t hash2[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char*)&hash1, SHA256_DIGEST_LENGTH, (unsigned char*)&hash2);
+    SHA256((unsigned char *) &hash1, SHA256_DIGEST_LENGTH, (unsigned char *) &hash2);
 
     if (memcmp(&hash2, &vchRet[vchRet.size() - 4], 4) != 0) {
         vchRet.clear();
@@ -601,13 +612,13 @@ std::string EncodeLegacyAddress(AddressContent content) {
 
 bool DecodeLegacyAddress(const std::string &str,
                          AddressContent &outContent) {
-    std::vector<uint8_t> data;
+    std::vector <uint8_t> data;
     if (!DecodeBase58Check(str, data, 21) || data.size() != 21) {
         // the user should check for content.hash.empty()
         return false;
     }
 
-    switch(data[0]) {
+    switch (data[0]) {
         case 0:
             outContent.addressType = AddressType::PUBKEY;
             outContent.chainType = ChainType::MAIN;
@@ -649,7 +660,6 @@ std::string PrefixFromChainType(const ChainType &chainType) {
     return "";
 }
 
-
 std::string Legacy2CashAddress(const std::string &legacyAddr) {
     AddressContent content;
     if (!DecodeLegacyAddress(legacyAddr, content)) {
@@ -663,10 +673,12 @@ std::string Legacy2CashAddress(const std::string &legacyAddr) {
 }
 
 std::string CashAddress2Legacy(const std::string &cashAddr,
-                            const std::string &expectedPrefix) {
+                               const std::string &expectedPrefix) {
     AddressContent content;
     if (!DecodeCashAddress(cashAddr, expectedPrefix, content)) {
-         return "";
+        return "";
     }
     return EncodeLegacyAddress(content);
 }
+
+} // namespace ecashaddr

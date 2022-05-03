@@ -11,6 +11,8 @@
 
 #include <openssl/sha.h>
 
+using namespace ecashaddr;
+
 // convert string to back to lower case
 static std::string to_lowercase(const std::string &str) {
     std::string ret;
