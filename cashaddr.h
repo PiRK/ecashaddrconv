@@ -87,6 +87,14 @@ struct AddressContent {
     ChainType chainType {ChainType::MAIN};
 };
 
+/**
+ * Encode a cash address from a payload (hash).
+ *
+ * @param prefix Cash address prefix to be used in the output address.
+ * @param content AddressContent provides the payload (script hash or public key
+ *                hash) and chain parameters (main chain, testnet, or regtest).
+ * @return cash address
+ */
 std::string EncodeCashAddr(const std::string &prefix,
                            const AddressContent &content);
 
@@ -117,6 +125,13 @@ bool DecodeBase58(const std::string &str, std::vector<uint8_t> &vch,
 bool DecodeBase58Check(const std::string &str, std::vector<uint8_t> &vchRet,
                        int max_ret_len);
 
+/**
+ * Encode a legacy address from a payload (hash).
+ *
+ * @param content AddressContent provides the payload (script hash or public key
+ *                hash) and chain parameters.
+ * @return cash address
+ */
 std::string EncodeLegacyAddr(AddressContent content);
 
 /**
